@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebRTC Demo</title>
+  </head>
+  <body>
+    <h2>1. Start your Webcam</h2>
+    <div class="videos">
+      <span>
+        <h3>Local Stream</h3>
+        <video id="webcamVideo" autoplay playsinline></video>
+      </span>
+      <span>
+        <h3>Remote Stream</h3>
+        <video id="remoteVideo" autoplay playsinline></video>
+      </span>
+
+
+    </div>
+    <div class="words" contenteditable>
+      <p id="p"></p>
+      <p id="p1"></p>
+    </div>
+    <button id="webcamButton">Start webcam</button>
+    <h2>2. Create a new Call</h2>
+    <button id="callButton" disabled>Create Call (offer)</button>
+
+    <h2>3. Join a Call</h2>
+    <p>Answer the call from a different browser window or device</p>
+    
+    <input id="callInput" />
+    <button id="answerButton" disabled>Answer</button>
+
+    <h2>4. Hangup</h2>
+
+    <button id="hangupButton" disabled>Hangup</button>
+
+    <script type="module" src="/main.js"></script>
+
+    <script type="text/javascript">
+      var transcript = "Bye";
+      var speech = true;
+      var eventsCompleted = 0;
+      window.SpeechRecognition =
+        window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+      const recognition = new SpeechRecognition();
+      recognition.interimResults = true;
+      const words = document.querySelector(".words");
+      words.appendChild(p);
+    
+      recognition.addEventListener("result", async (e) => {
+        transcript = Array.from(e.results)
+          .map((result) => result[0])
+          .map((result) => result.transcript)
+          .join("");
+    
+        document.getElementById("p").innerHTML = transcript;
+        console.log(transcript);
+    
+      });
+
+      
+      // add an event listener for the "end" event
+      recognition.addEventListener('end', () => {
+          eventsCompleted++; // increment the flag
+          if (eventsCompleted === 2) { // if both events are completed
+              fetchTranslation(); // call the function
+          }
+      });
+    
+      if (speech == true) {
+        recognition.start();
+        recognition.addEventListener("end", recognition.start);
+      }
+    
+      async function fetchTranslation() {
+        const encodedParams = new URLSearchParams();
+        encodedParams.set("q", transcript);
+        encodedParams.set("target", "mr");
+        encodedParams.set("source", "en");
+    
+        const url = 'https://google-translate1.p.rapidapi.com/language/translate/v2';
+          const options = {
+              method: 'POST',
+              headers: {
+                  'content-type': 'application/x-www-form-urlencoded',
+                  'Accept-Encoding': 'application/gzip',
+                  'X-RapidAPI-Key': <YOUR API KEY>, // Change this API key
+                  'X-RapidAPI-Host': 'google-translate1.p.rapidapi.com'
+              },
+          body: encodedParams,
+        };
+        try {
+          const response = await fetch(url, options);
+          const result = await response.text();
+          console.log(result);
+          var translatText = result.slice(44, -5);
+    
+          updatePlaceholders(translatText);
+          eventsCompleted = 0;
+        } catch (error) {
+          console.error(error);
+        }
+      }
+    
+      function updatePlaceholders(updateString) {
+        document.getElementById("p1").innerHTML = updateString;
+        console.log(updateString);
+        var msg = new SpeechSynthesisUtterance(updateString);
+          msg.lang = 'mr';
+          speechSynthesis.speak(msg);
+      }
+    
+      </script>
+
+  </body>
+</html>
